@@ -1,0 +1,65 @@
+name: Deploy with Docker
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - uses: actions/checkout@v3
+    
+    - name: Setup Node.js
+      uses: actions/setup-node@v3
+      with:
+        node-version: '18'
+        cache: 'npm'
+    
+    - name: Install dependencies
+      run: npm ci
+    
+    - name: Run linting
+      run: npm run lint
+    
+    - name: Run tests
+      run: npm run test:coverage
+    
+    - name: Build application
+      run: npm run build
+      env:
+        VITE_CHAIN_ID: ${{ secrets.VITE_CHAIN_ID || 'cosmoshub-4' }}
+        VITE_RPC_URL: ${{ secrets.VITE_RPC_URL || 'https://rpc.cosmos.network' }}
+        VITE_CONTRACT_ADDRESS: ${{ secrets.VITE_CONTRACT_ADDRESS || 'cosmwasm1contract...' }}
+        VITE_SENDER_ADDRESS: ${{ secrets.VITE_SENDER_ADDRESS || 'cosmwasm1sender...' }}
+
+  build-docker:
+    needs: test
+    runs-on: ubuntu-latest
+    if: github.ref == 'refs/heads/main'
+    
+    steps:
+    - uses: actions/checkout@v3
+    
+    - name: Set up Docker Buildx
+      uses: docker/setup-buildx-action@v2
+    
+    - name: Login to Docker Hub
+      uses: docker/login-action@v2
+      with:
+        username: ${{ secrets.DOCKER_USERNAME }}
+        password: ${{ secrets.DOCKER_PASSWORD }}
+    
+    - name: Build and push Docker image
+      uses: docker/build-push-action@v4
+      with:
+        context: .
+        push: true
+        tags: |
+          ${{ secrets.DOCKER_USERNAME }}/dd-3d-lottery-frontend:latest
+          ${{ secrets.DOCKER_USERNAME }}/dd-3d-lottery-frontend:${{ github.sha }}
+        cache-from: type=gha
+        cache-to: type=gha,mode=max

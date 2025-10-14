@@ -1,0 +1,283 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <link rel="icon" type="image/svg+xml" href="/favicon.ico" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>3D彩票 - 去中心化彩票系统</title>
+    <meta name="description" content="基于CosmWasm的去中心化3D彩票系统" />
+    <meta name="keywords" content="彩票,区块链,去中心化,CosmWasm" />
+    
+    <!-- 简化的Web API polyfill，避免Illegal invocation问题 -->
+    <script>
+      // 立即执行，确保在任何模块加载前就完成
+      (function() {
+        // 确保globalThis存在
+        if (typeof globalThis === 'undefined') {
+          window.globalThis = window;
+        }
+        
+        // 创建简单的Web API对象，避免复杂的构造函数
+        const RequestPolyfill = function(input, init) {
+          const obj = {
+            url: input,
+            method: (init && init.method) || 'GET',
+            headers: new HeadersPolyfill(init && init.headers),
+            body: init && init.body,
+            mode: (init && init.mode) || 'cors',
+            credentials: (init && init.credentials) || 'same-origin',
+            cache: (init && init.cache) || 'default',
+            redirect: (init && init.redirect) || 'follow',
+            referrer: (init && init.referrer) || 'about:client',
+            signal: (init && init.signal) || null,
+            clone: function() {
+              return new RequestPolyfill(input, init);
+            }
+          };
+          return obj;
+        };
+        
+        const ResponsePolyfill = function(body, init) {
+          const obj = {
+            body: body,
+            status: (init && init.status) || 200,
+            statusText: (init && init.statusText) || 'OK',
+            headers: new HeadersPolyfill(init && init.headers),
+            ok: ((init && init.status) || 200) >= 200 && ((init && init.status) || 200) < 300,
+            type: 'basic',
+            url: '',
+            redirected: false,
+            clone: function() {
+              return new ResponsePolyfill(body, init);
+            }
+          };
+          return obj;
+        };
+        
+        const HeadersPolyfill = function(init) {
+          const obj = {
+            _headers: {},
+            get: function(name) {
+              return this._headers[name.toLowerCase()] || null;
+            },
+            set: function(name, value) {
+              this._headers[name.toLowerCase()] = value;
+            },
+            has: function(name) {
+              return name.toLowerCase() in this._headers;
+            },
+            delete: function(name) {
+              delete this._headers[name.toLowerCase()];
+            },
+            forEach: function(callback) {
+              Object.keys(this._headers).forEach(key => {
+                callback(this._headers[key], key, this);
+              });
+            }
+          };
+          
+          if (init) {
+            if (Array.isArray(init)) {
+              init.forEach(([key, value]) => {
+                obj._headers[key.toLowerCase()] = value;
+              });
+            } else if (typeof init === 'object') {
+              Object.keys(init).forEach(key => {
+                obj._headers[key.toLowerCase()] = init[key];
+              });
+            }
+          }
+          
+          return obj;
+        };
+        
+        // 直接设置到globalThis，避免复杂的对象替换
+        globalThis.Request = RequestPolyfill;
+        globalThis.Response = ResponsePolyfill;
+        globalThis.Headers = HeadersPolyfill;
+        globalThis.fetch = function(input, init) {
+          return Promise.reject(new Error('fetch not available'));
+        };
+        
+        // 设置到所有全局对象
+        window.Request = globalThis.Request;
+        window.Response = globalThis.Response;
+        window.Headers = globalThis.Headers;
+        window.fetch = globalThis.fetch;
+        
+        if (typeof global === 'undefined') {
+          window.global = window;
+        }
+        global.Request = globalThis.Request;
+        global.Response = globalThis.Response;
+        global.Headers = globalThis.Headers;
+        global.fetch = globalThis.fetch;
+        
+        // 验证设置
+        console.log('Web API polyfill set:', {
+          Request: typeof globalThis.Request,
+          Response: typeof globalThis.Response,
+          Headers: typeof globalThis.Headers,
+          fetch: typeof globalThis.fetch,
+          hasRequest: 'Request' in globalThis,
+          hasResponse: 'Response' in globalThis,
+          hasHeaders: 'Headers' in globalThis,
+          hasFetch: 'fetch' in globalThis
+        });
+        
+        // 测试解构
+        try {
+          const { Request, Response, Headers, fetch } = globalThis;
+          console.log('解构测试成功:', { Request: typeof Request, Response: typeof Response, Headers: typeof Headers, fetch: typeof fetch });
+        } catch (e) {
+          console.error('解构测试失败:', e);
+        }
+        
+        // 创建一个完全兼容的Web API环境
+        const createCompatibleAPI = () => {
+          // 重写Web API构造函数，确保它们总是返回正确的对象
+          const CompatibleRequest = function(input, init) {
+            if (this instanceof CompatibleRequest) {
+              // 作为构造函数调用
+              Object.assign(this, {
+                url: input,
+                method: (init && init.method) || 'GET',
+                headers: new CompatibleHeaders(init && init.headers),
+                body: init && init.body,
+                mode: (init && init.mode) || 'cors',
+                credentials: (init && init.credentials) || 'same-origin',
+                cache: (init && init.cache) || 'default',
+                redirect: (init && init.redirect) || 'follow',
+                referrer: (init && init.referrer) || 'about:client',
+                signal: (init && init.signal) || null
+              });
+            } else {
+              // 作为函数调用，返回新实例
+              return new CompatibleRequest(input, init);
+            }
+          };
+          
+          const CompatibleResponse = function(body, init) {
+            if (this instanceof CompatibleResponse) {
+              // 作为构造函数调用
+              Object.assign(this, {
+                body: body,
+                status: (init && init.status) || 200,
+                statusText: (init && init.statusText) || 'OK',
+                headers: new CompatibleHeaders(init && init.headers),
+                ok: ((init && init.status) || 200) >= 200 && ((init && init.status) || 200) < 300,
+                type: 'basic',
+                url: '',
+                redirected: false
+              });
+            } else {
+              // 作为函数调用，返回新实例
+              return new CompatibleResponse(body, init);
+            }
+          };
+          
+          const CompatibleHeaders = function(init) {
+            if (this instanceof CompatibleHeaders) {
+              // 作为构造函数调用
+              this._headers = {};
+              if (init) {
+                if (Array.isArray(init)) {
+                  init.forEach(([key, value]) => {
+                    this._headers[key.toLowerCase()] = value;
+                  });
+                } else if (typeof init === 'object') {
+                  Object.keys(init).forEach(key => {
+                    this._headers[key.toLowerCase()] = init[key];
+                  });
+                }
+              }
+            } else {
+              // 作为函数调用，返回新实例
+              return new CompatibleHeaders(init);
+            }
+          };
+          
+          // 添加原型方法
+          CompatibleRequest.prototype.clone = function() {
+            return new CompatibleRequest(this.url, {
+              method: this.method,
+              headers: this.headers,
+              body: this.body,
+              mode: this.mode,
+              credentials: this.credentials,
+              cache: this.cache,
+              redirect: this.redirect,
+              referrer: this.referrer,
+              signal: this.signal
+            });
+          };
+          
+          CompatibleResponse.prototype.clone = function() {
+            return new CompatibleResponse(this.body, {
+              status: this.status,
+              statusText: this.statusText,
+              headers: this.headers
+            });
+          };
+          
+          CompatibleHeaders.prototype.get = function(name) {
+            return this._headers[name.toLowerCase()] || null;
+          };
+          
+          CompatibleHeaders.prototype.set = function(name, value) {
+            this._headers[name.toLowerCase()] = value;
+          };
+          
+          CompatibleHeaders.prototype.has = function(name) {
+            return name.toLowerCase() in this._headers;
+          };
+          
+          CompatibleHeaders.prototype.delete = function(name) {
+            delete this._headers[name.toLowerCase()];
+          };
+          
+          CompatibleHeaders.prototype.forEach = function(callback) {
+            Object.keys(this._headers).forEach(key => {
+              callback(this._headers[key], key, this);
+            });
+          };
+          
+          return {
+            Request: CompatibleRequest,
+            Response: CompatibleResponse,
+            Headers: CompatibleHeaders,
+            fetch: function(input, init) {
+              return Promise.reject(new Error('fetch not available'));
+            }
+          };
+        };
+        
+        // 替换Web API
+        const compatibleAPI = createCompatibleAPI();
+        globalThis.Request = compatibleAPI.Request;
+        globalThis.Response = compatibleAPI.Response;
+        globalThis.Headers = compatibleAPI.Headers;
+        globalThis.fetch = compatibleAPI.fetch;
+        
+        // 更新所有全局引用
+        window.Request = globalThis.Request;
+        window.Response = globalThis.Response;
+        window.Headers = globalThis.Headers;
+        window.fetch = globalThis.fetch;
+        
+        global.Request = globalThis.Request;
+        global.Response = globalThis.Response;
+        global.Headers = globalThis.Headers;
+        global.fetch = globalThis.fetch;
+        
+        console.log('Web API已替换为兼容版本');
+      })();
+    </script>
+    
+    <script type="module" src="/src/main.tsx"></script>
+  </head>
+  <body>
+    <div id="root"></div>
+    
+  </body>
+</html>

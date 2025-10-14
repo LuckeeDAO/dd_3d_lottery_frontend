@@ -1,0 +1,28 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>测试页面</title>
+</head>
+<body>
+    <div id="root">测试内容</div>
+    <script>
+        console.log('测试脚本开始执行');
+        console.log('root元素:', document.getElementById('root'));
+        
+        // 测试React是否可用
+        if (typeof React !== 'undefined') {
+            console.log('React可用:', React);
+        } else {
+            console.log('React不可用');
+        }
+        
+        // 测试polyfill
+        console.log('Request:', typeof Request);
+        console.log('Response:', typeof Response);
+        console.log('Headers:', typeof Headers);
+        console.log('fetch:', typeof fetch);
+    </script>
+</body>
+</html>
