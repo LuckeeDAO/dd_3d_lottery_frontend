@@ -1,6 +1,6 @@
 import { defineConfig } from 'vite'
 import react from '@vitejs/plugin-react'
-import path from 'path'
+import * as path from 'path'
 
 // https://vitejs.dev/config/
 export default defineConfig({
@@ -8,8 +8,6 @@ export default defineConfig({
   base: process.env.VITE_BUILD_FOR_GITHUB_PAGES === 'true' ? '/dd_3d_lottery_frontend/' : '/',
   plugins: [
     react({
-      // 启用React Fast Refresh
-      fastRefresh: true,
       // 启用JSX运行时
       jsxRuntime: 'automatic',
     }),
@@ -34,11 +32,19 @@ export default defineConfig({
     }
   ],
   define: {
-    global: 'globalThis',
     'process.env': {},
     // 修复CosmJS库的Node.js模块问题
     'process.env.NODE_ENV': JSON.stringify(process.env.NODE_ENV || 'development'),
     'process.env.VITE_APP_NAME': JSON.stringify(process.env.VITE_APP_NAME || 'DD 3D Lottery'),
+    // 修复axios和CosmJS的浏览器兼容性问题
+    'process.browser': 'true',
+    'process.version': '""',
+    'process.versions': '{}',
+    'process.platform': '"browser"',
+    // 添加更多process polyfill
+    'process.nextTick': 'setTimeout',
+    'process.hrtime': '() => [0, 0]',
+    'process.uptime': '() => 0',
   },
   resolve: {
     alias: {
@@ -64,8 +70,8 @@ export default defineConfig({
     outDir: 'dist',
     // 启用源码映射（仅开发环境）
     sourcemap: process.env.NODE_ENV === 'development',
-    // 启用压缩优化
-    minify: 'terser',
+    // 暂时禁用压缩以解决构建问题
+    minify: false,
     terserOptions: {
       compress: {
         // 移除console.log
@@ -160,11 +166,19 @@ export default defineConfig({
       '@cosmjs/encoding',
       '@cosmjs/math',
       '@cosmjs/proto-signing',
+      // 添加axios以确保正确预构建
+      'axios',
     ],
     // 排除预构建
     exclude: ['@vite/client', '@vite/env'],
     // 启用强制预构建
     force: true,
+    // 添加esbuild选项来处理Node.js模块
+    esbuildOptions: {
+      define: {
+        global: 'globalThis',
+      },
+    },
   },
   // 启用ESBuild优化
   esbuild: {

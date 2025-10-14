@@ -1,8 +1,5 @@
-// import { CosmWasmClient } from '@cosmjs/cosmwasm-stargate' // 暂时注释掉避免Illegal invocation错误
+import { CosmWasmClient } from '@cosmjs/cosmwasm-stargate'
 import { LotterySession, ParticipantInfo, LotteryResult, PhaseInfo, ContractConfig, StatsInfo, VersionInfo } from '@/types/lottery'
-
-// 临时类型定义
-type CosmWasmClient = any
 
 export interface ContractService {
   getCurrentSession(): Promise<LotterySession>;
@@ -28,9 +25,6 @@ class ContractServiceImpl implements ContractService {
   }
 
   private async getClient(): Promise<CosmWasmClient> {
-    // 暂时禁用CosmJS连接，避免Illegal invocation错误
-    throw new Error('CosmJS temporarily disabled to fix Illegal invocation error')
-    
     if (!this.client) {
       this.client = await CosmWasmClient.connect(import.meta.env.VITE_RPC_URL || 'https://rpc.cosmos.network')
     }

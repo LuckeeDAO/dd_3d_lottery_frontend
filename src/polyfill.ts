@@ -104,12 +104,61 @@ if (!hasNativeFetch) {
     return Promise.reject(new Error('fetch not available'));
   };
 } else {
-  (globalThis as any).fetch = window.fetch;
+  (globalThis as any).fetch = window.fetch.bind(window);
 }
 
 // 确保这些对象在全局作用域中可用
-if (typeof (global as any) === 'undefined') {
-  (window as any).global = window;
+if (typeof (globalThis as any).global === 'undefined') {
+  (globalThis as any).global = globalThis;
+}
+
+// 修复axios的"Illegal invocation"错误
+// 确保所有Web API都有正确的this绑定
+const originalFetch = window.fetch;
+if (originalFetch) {
+  (globalThis as any).fetch = function(...args: any[]) {
+    return originalFetch.apply(window, args);
+  };
+  
+  // 确保fetch在全局作用域中正确绑定
+  (window as any).fetch = function(...args: any[]) {
+    return originalFetch.apply(window, args);
+  };
+  
+  // 修复globalThis中的fetch
+  Object.defineProperty(globalThis, 'fetch', {
+    value: function(...args: any[]) {
+      return originalFetch.apply(window, args);
+    },
+    writable: true,
+    configurable: true,
+    enumerable: false
+  });
+}
+
+// 修复Request和Response的this绑定问题
+const originalRequest = window.Request;
+if (originalRequest) {
+  (globalThis as any).Request = function(...args: any[]) {
+    return new originalRequest(...args);
+  };
+  (globalThis as any).Request.prototype = originalRequest.prototype;
+}
+
+const originalResponse = window.Response;
+if (originalResponse) {
+  (globalThis as any).Response = function(...args: any[]) {
+    return new originalResponse(...args);
+  };
+  (globalThis as any).Response.prototype = originalResponse.prototype;
+}
+
+const originalHeaders = window.Headers;
+if (originalHeaders) {
+  (globalThis as any).Headers = function(...args: any[]) {
+    return new originalHeaders(...args);
+  };
+  (globalThis as any).Headers.prototype = originalHeaders.prototype;
 }
 
 // 设置到所有全局对象
@@ -168,6 +217,34 @@ console.log('Web API polyfill loaded:', {
   }
 });
 
+// 添加更全面的axios兼容性修复
+// 确保所有Web API在全局作用域中正确可用
+if (typeof window !== 'undefined') {
+  // 修复全局作用域中的Web API
+  (window as any).Request = (globalThis as any).Request;
+  (window as any).Response = (globalThis as any).Response;
+  (window as any).Headers = (globalThis as any).Headers;
+  (window as any).fetch = (globalThis as any).fetch;
+  
+  // 确保这些API在global对象中也可用
+  (globalThis as any).global = globalThis;
+  (globalThis as any).Request = (globalThis as any).Request;
+  (globalThis as any).Response = (globalThis as any).Response;
+  (globalThis as any).Headers = (globalThis as any).Headers;
+  (globalThis as any).fetch = (globalThis as any).fetch;
+}
+
+// 添加process polyfill以支持axios
+if (typeof (globalThis as any).process === 'undefined') {
+  (globalThis as any).process = {
+    env: {},
+    browser: true,
+    version: '',
+    versions: {},
+    platform: 'browser'
+  };
+}
+
 // 验证设置是否成功
 if (typeof (globalThis as any).Request === 'undefined') {
   console.error('Failed to set Request polyfill');
@@ -181,3 +258,19 @@ if (typeof (globalThis as any).Headers === 'undefined') {
 if (typeof (globalThis as any).fetch === 'undefined') {
   console.error('Failed to set fetch polyfill');
 }
+
+console.log('Enhanced polyfill setup completed:', {
+  globalThis: {
+    Request: typeof (globalThis as any).Request,
+    Response: typeof (globalThis as any).Response,
+    Headers: typeof (globalThis as any).Headers,
+    fetch: typeof (globalThis as any).fetch,
+    process: typeof (globalThis as any).process
+  },
+  window: {
+    Request: typeof (window as any).Request,
+    Response: typeof (window as any).Response,
+    Headers: typeof (window as any).Headers,
+    fetch: typeof (window as any).fetch
+  }
+});

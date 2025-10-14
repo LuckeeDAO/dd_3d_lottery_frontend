@@ -1,6 +1,9 @@
 // 立即显示调试信息
 console.log('=== main.tsx 开始执行 ===')
 
+// 首先导入axios polyfill以修复"Illegal invocation"错误
+import './axios-polyfill'
+
 // 导入polyfills以修复CosmJS库的Node.js模块问题
 import './polyfills'
 
